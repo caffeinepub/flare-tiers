@@ -9,82 +9,125 @@
 import { IDL } from '@icp-sdk/core/candid';
 
 export const Tier = IDL.Variant({
-  'a' : IDL.Null,
-  'b' : IDL.Null,
-  'c' : IDL.Null,
-  'd' : IDL.Null,
-  's' : IDL.Null,
+  'ht1' : IDL.Null,
+  'ht2' : IDL.Null,
+  'ht3' : IDL.Null,
+  'ht4' : IDL.Null,
+  'ht5' : IDL.Null,
+  'lt1' : IDL.Null,
+  'lt2' : IDL.Null,
+  'lt3' : IDL.Null,
+  'lt4' : IDL.Null,
+  'lt5' : IDL.Null,
 });
-export const Player = IDL.Record({
-  'id' : IDL.Nat,
-  'name' : IDL.Text,
+export const GameModeEntry = IDL.Record({
   'tier' : Tier,
-  'avatarUrl' : IDL.Opt(IDL.Text),
   'gameMode' : IDL.Text,
-  'points' : IDL.Nat,
 });
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
+export const Player = IDL.Record({
+  'id' : IDL.Nat,
+  'name' : IDL.Text,
+  'entries' : IDL.Vec(GameModeEntry),
+  'avatarUrl' : IDL.Opt(IDL.Text),
+});
+export const UserProfile = IDL.Record({ 'name' : IDL.Text });
 
 export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-  'addPlayer' : IDL.Func([Player], [IDL.Nat], []),
+  'addPlayer' : IDL.Func(
+      [IDL.Text, IDL.Vec(GameModeEntry), IDL.Text],
+      [IDL.Nat],
+      [],
+    ),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-  'deletePlayer' : IDL.Func([IDL.Nat], [], []),
+  'deleteAllPlayers' : IDL.Func([], [], []),
+  'deletePlayer' : IDL.Func([IDL.Nat], [IDL.Bool], []),
   'getAllPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-  'getPlayer' : IDL.Func([IDL.Nat], [Player], ['query']),
   'getPlayersByTier' : IDL.Func([Tier], [IDL.Vec(Player)], ['query']),
   'getPodium' : IDL.Func([], [IDL.Vec(Player)], ['query']),
-  'getTop3Players' : IDL.Func([], [IDL.Vec(Player)], ['query']),
+  'getTopPlayers' : IDL.Func([IDL.Nat], [IDL.Vec(Player)], ['query']),
+  'getUserProfile' : IDL.Func(
+      [IDL.Principal],
+      [IDL.Opt(UserProfile)],
+      ['query'],
+    ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-  'seedSampleData' : IDL.Func([], [], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'seedSamplePlayers' : IDL.Func([], [], []),
   'setPodium' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
-  'updatePlayer' : IDL.Func([IDL.Nat, Player], [], []),
+  'updatePlayer' : IDL.Func(
+      [IDL.Nat, IDL.Text, IDL.Vec(GameModeEntry), IDL.Text],
+      [IDL.Bool],
+      [],
+    ),
 });
 
 export const idlInitArgs = [];
 
 export const idlFactory = ({ IDL }) => {
   const Tier = IDL.Variant({
-    'a' : IDL.Null,
-    'b' : IDL.Null,
-    'c' : IDL.Null,
-    'd' : IDL.Null,
-    's' : IDL.Null,
+    'ht1' : IDL.Null,
+    'ht2' : IDL.Null,
+    'ht3' : IDL.Null,
+    'ht4' : IDL.Null,
+    'ht5' : IDL.Null,
+    'lt1' : IDL.Null,
+    'lt2' : IDL.Null,
+    'lt3' : IDL.Null,
+    'lt4' : IDL.Null,
+    'lt5' : IDL.Null,
   });
-  const Player = IDL.Record({
-    'id' : IDL.Nat,
-    'name' : IDL.Text,
-    'tier' : Tier,
-    'avatarUrl' : IDL.Opt(IDL.Text),
-    'gameMode' : IDL.Text,
-    'points' : IDL.Nat,
-  });
+  const GameModeEntry = IDL.Record({ 'tier' : Tier, 'gameMode' : IDL.Text });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
+  const Player = IDL.Record({
+    'id' : IDL.Nat,
+    'name' : IDL.Text,
+    'entries' : IDL.Vec(GameModeEntry),
+    'avatarUrl' : IDL.Opt(IDL.Text),
+  });
+  const UserProfile = IDL.Record({ 'name' : IDL.Text });
   
   return IDL.Service({
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
-    'addPlayer' : IDL.Func([Player], [IDL.Nat], []),
+    'addPlayer' : IDL.Func(
+        [IDL.Text, IDL.Vec(GameModeEntry), IDL.Text],
+        [IDL.Nat],
+        [],
+      ),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
-    'deletePlayer' : IDL.Func([IDL.Nat], [], []),
+    'deleteAllPlayers' : IDL.Func([], [], []),
+    'deletePlayer' : IDL.Func([IDL.Nat], [IDL.Bool], []),
     'getAllPlayers' : IDL.Func([], [IDL.Vec(Player)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
-    'getPlayer' : IDL.Func([IDL.Nat], [Player], ['query']),
     'getPlayersByTier' : IDL.Func([Tier], [IDL.Vec(Player)], ['query']),
     'getPodium' : IDL.Func([], [IDL.Vec(Player)], ['query']),
-    'getTop3Players' : IDL.Func([], [IDL.Vec(Player)], ['query']),
+    'getTopPlayers' : IDL.Func([IDL.Nat], [IDL.Vec(Player)], ['query']),
+    'getUserProfile' : IDL.Func(
+        [IDL.Principal],
+        [IDL.Opt(UserProfile)],
+        ['query'],
+      ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
-    'seedSampleData' : IDL.Func([], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'seedSamplePlayers' : IDL.Func([], [], []),
     'setPodium' : IDL.Func([IDL.Nat, IDL.Nat, IDL.Nat], [], []),
-    'updatePlayer' : IDL.Func([IDL.Nat, Player], [], []),
+    'updatePlayer' : IDL.Func(
+        [IDL.Nat, IDL.Text, IDL.Vec(GameModeEntry), IDL.Text],
+        [IDL.Bool],
+        [],
+      ),
   });
 };
 

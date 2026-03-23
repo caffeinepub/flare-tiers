@@ -10,37 +10,60 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export interface GameModeEntry { 'tier' : Tier, 'gameMode' : string }
 export interface Player {
   'id' : bigint,
   'name' : string,
-  'tier' : Tier,
+  'entries' : Array<GameModeEntry>,
   'avatarUrl' : [] | [string],
-  'gameMode' : string,
-  'points' : bigint,
 }
-export type Tier = { 'a' : null } |
-  { 'b' : null } |
-  { 'c' : null } |
-  { 'd' : null } |
-  { 's' : null };
+export type Tier = { 'ht1' : null } |
+  { 'ht2' : null } |
+  { 'ht3' : null } |
+  { 'ht4' : null } |
+  { 'ht5' : null } |
+  { 'lt1' : null } |
+  { 'lt2' : null } |
+  { 'lt3' : null } |
+  { 'lt4' : null } |
+  { 'lt5' : null };
+export interface UserProfile { 'name' : string }
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
 export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'addPlayer' : ActorMethod<[Player], bigint>,
+  /**
+   * / --- Player Management ---
+   */
+  'addPlayer' : ActorMethod<[string, Array<GameModeEntry>, string], bigint>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deletePlayer' : ActorMethod<[bigint], undefined>,
+  'deleteAllPlayers' : ActorMethod<[], undefined>,
+  'deletePlayer' : ActorMethod<[bigint], boolean>,
+  /**
+   * / --- Player Queries ---
+   */
   'getAllPlayers' : ActorMethod<[], Array<Player>>,
+  /**
+   * / --- User Profile Management ---
+   */
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
-  'getPlayer' : ActorMethod<[bigint], Player>,
   'getPlayersByTier' : ActorMethod<[Tier], Array<Player>>,
+  /**
+   * / --- Podium / Top 3 ---
+   */
   'getPodium' : ActorMethod<[], Array<Player>>,
-  'getTop3Players' : ActorMethod<[], Array<Player>>,
+  'getTopPlayers' : ActorMethod<[bigint], Array<Player>>,
+  'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'seedSampleData' : ActorMethod<[], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'seedSamplePlayers' : ActorMethod<[], undefined>,
   'setPodium' : ActorMethod<[bigint, bigint, bigint], undefined>,
-  'updatePlayer' : ActorMethod<[bigint, Player], undefined>,
+  'updatePlayer' : ActorMethod<
+    [bigint, string, Array<GameModeEntry>, string],
+    boolean
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

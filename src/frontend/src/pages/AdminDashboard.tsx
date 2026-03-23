@@ -32,6 +32,7 @@ import { useNavigate } from "@tanstack/react-router";
 import {
   Database,
   Loader2,
+  Lock,
   Pencil,
   Plus,
   Save,
@@ -42,10 +43,11 @@ import {
 import { motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { type Player, Tier } from "../backend";
+import { type GameModeEntry, type Player, Tier } from "../backend";
 import PlayerAvatar from "../components/PlayerAvatar";
 import SiteNav from "../components/SiteNav";
 import TierBadge from "../components/TierBadge";
+import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import {
   useAddPlayer,
@@ -58,28 +60,45 @@ import {
   useUpdatePlayer,
 } from "../hooks/useQueries";
 
-const TIERS = [Tier.s, Tier.a, Tier.b, Tier.c, Tier.d];
+const TIERS: Tier[] = [
+  Tier.ht1,
+  Tier.lt1,
+  Tier.ht2,
+  Tier.lt2,
+  Tier.ht3,
+  Tier.lt3,
+  Tier.ht4,
+  Tier.lt4,
+  Tier.ht5,
+  Tier.lt5,
+];
 
+interface EntryWithId extends GameModeEntry {
+  _id: number;
+}
 interface PlayerFormData {
   name: string;
-  tier: Tier;
-  points: string;
-  gameMode: string;
   avatarUrl: string;
+  entries: EntryWithId[];
 }
 
+let _nextId = 0;
+const newEntry = (): EntryWithId => ({
+  gameMode: "",
+  tier: Tier.ht3,
+  _id: _nextId++,
+});
 const emptyForm: PlayerFormData = {
   name: "",
-  tier: Tier.b,
-  points: "0",
-  gameMode: "",
   avatarUrl: "",
+  entries: [newEntry()],
 };
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { identity } = useInternetIdentity();
+  const { identity, isInitializing } = useInternetIdentity();
   const isAuthenticated = !!identity;
+  const { isFetching } = useActor();
 
   const { data: isAdmin, isLoading: adminLoading } = useIsCallerAdmin();
   const { data: allPlayers = [], isLoading: playersLoading } =
@@ -107,15 +126,8 @@ export default function AdminDashboard() {
   }, [podium]);
 
   useEffect(() => {
-    if (!isAuthenticated) navigate({ to: "/admin" });
-  }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    if (!adminLoading && isAdmin === false) {
-      toast.error("Access denied. Admin privileges required.");
-      navigate({ to: "/" });
-    }
-  }, [isAdmin, adminLoading, navigate]);
+    if (!isInitializing && !isAuthenticated) navigate({ to: "/admin" });
+  }, [isInitializing, isAuthenticated, navigate]);
 
   const openAddDialog = () => {
     setEditingPlayer(null);
@@ -127,41 +139,78 @@ export default function AdminDashboard() {
     setEditingPlayer(player);
     setForm({
       name: player.name,
-      tier: player.tier,
-      points: player.points.toString(),
-      gameMode: player.gameMode,
       avatarUrl: player.avatarUrl || "",
+      entries:
+        player.entries.length > 0
+          ? player.entries.map((e) => ({ ...e, _id: _nextId++ }))
+          : [newEntry()],
     });
     setDialogOpen(true);
   };
 
+  const addEntry = () => {
+    setForm((prev) => ({
+      ...prev,
+      entries: [...prev.entries, newEntry()],
+    }));
+  };
+
+  const removeEntry = (idx: number) => {
+    setForm((prev) => ({
+      ...prev,
+      entries: prev.entries.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const updateEntry = (
+    idx: number,
+    field: keyof GameModeEntry,
+    value: string,
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      entries: prev.entries.map((e, i) =>
+        i === idx ? { ...e, [field]: value } : e,
+      ),
+    }));
+  };
+
   const handleSavePlayer = async () => {
-    if (!form.name.trim() || !form.gameMode.trim()) {
-      toast.error("Name and Gamemode are required.");
+    if (!form.name.trim()) {
+      toast.error("Player name is required.");
       return;
     }
-    const playerData: Player = {
-      id: editingPlayer?.id ?? BigInt(0),
+    if (form.entries.length === 0) {
+      toast.error("At least one game mode entry is required.");
+      return;
+    }
+    for (const e of form.entries) {
+      if (!e.gameMode.trim()) {
+        toast.error("All game mode entries must have a name.");
+        return;
+      }
+    }
+
+    const payload = {
       name: form.name.trim(),
-      tier: form.tier,
-      points: BigInt(Number.parseInt(form.points) || 0),
-      gameMode: form.gameMode.trim(),
-      avatarUrl: form.avatarUrl.trim() || undefined,
+      entries: form.entries.map((e) => ({
+        gameMode: e.gameMode.trim(),
+        tier: e.tier,
+      })),
+      avatarUrl: form.avatarUrl.trim(),
     };
+
     try {
       if (editingPlayer) {
-        await updatePlayer.mutateAsync({
-          id: editingPlayer.id,
-          player: playerData,
-        });
-        toast.success(`${playerData.name} updated successfully.`);
+        await updatePlayer.mutateAsync({ id: editingPlayer.id, ...payload });
+        toast.success(`${payload.name} updated successfully.`);
       } else {
-        await addPlayer.mutateAsync(playerData);
-        toast.success(`${playerData.name} added successfully.`);
+        await addPlayer.mutateAsync(payload);
+        toast.success(`${payload.name} added successfully.`);
       }
       setDialogOpen(false);
     } catch (_e) {
-      toast.error("Failed to save player.");
+      toast.error("Failed to save player data.");
     }
   };
 
@@ -202,13 +251,55 @@ export default function AdminDashboard() {
 
   const isSaving = addPlayer.isPending || updatePlayer.isPending;
 
-  if (adminLoading) {
+  if (isInitializing || isFetching || adminLoading) {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
         data-ocid="dashboard.loading_state"
       >
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!adminLoading && isAdmin === false) {
+    return (
+      <div className="min-h-screen bg-background">
+        <SiteNav />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card
+              className="bg-card border-border max-w-md w-full text-center"
+              data-ocid="dashboard.error_state"
+            >
+              <CardContent className="pt-10 pb-8 px-8">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <Lock className="w-8 h-8 text-destructive" />
+                  </div>
+                </div>
+                <h2 className="font-pixel text-sm text-foreground mb-3">
+                  ACCESS DENIED
+                </h2>
+                <p className="text-muted-foreground text-sm leading-relaxed mb-6">
+                  You don&apos;t have admin privileges. Make sure you&apos;re
+                  accessing this page from the Caffeine platform dashboard.
+                </p>
+                <Button
+                  onClick={() => navigate({ to: "/" })}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold uppercase tracking-wider"
+                  data-ocid="dashboard.primary_button"
+                >
+                  Go Home
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </main>
       </div>
     );
   }
@@ -297,14 +388,8 @@ export default function AdminDashboard() {
                             <th className="text-left px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                               Player
                             </th>
-                            <th className="text-left px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider hidden sm:table-cell">
-                              Gamemode
-                            </th>
-                            <th className="text-right px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                              Points
-                            </th>
-                            <th className="text-center px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                              Tier
+                            <th className="text-left px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                              Entries
                             </th>
                             <th className="text-right px-4 py-3 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                               Actions
@@ -330,14 +415,20 @@ export default function AdminDashboard() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-muted-foreground text-sm hidden sm:table-cell">
-                                {player.gameMode}
-                              </td>
-                              <td className="px-4 py-3 text-right font-mono text-sm">
-                                {player.points.toString()}
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <TierBadge tier={player.tier} size="sm" />
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap gap-2">
+                                  {player.entries.map((e, ei) => (
+                                    <span
+                                      key={`${e.gameMode}-${e.tier}-${ei}`}
+                                      className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-muted/40 border border-border/50"
+                                    >
+                                      <TierBadge tier={e.tier} size="sm" />
+                                      <span className="text-xs text-muted-foreground">
+                                        {e.gameMode}
+                                      </span>
+                                    </span>
+                                  ))}
+                                </div>
                               </td>
                               <td className="px-4 py-3">
                                 <div className="flex items-center justify-end gap-2">
@@ -503,7 +594,7 @@ export default function AdminDashboard() {
       {/* Add/Edit Player Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent
-          className="bg-card border-border sm:max-w-md"
+          className="bg-card border-border sm:max-w-lg"
           data-ocid="player-form.dialog"
         >
           <DialogHeader>
@@ -511,7 +602,7 @@ export default function AdminDashboard() {
               {editingPlayer ? "EDIT PLAYER" : "ADD PLAYER"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-5 py-2 max-h-[70vh] overflow-y-auto pr-1">
             <div>
               <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
                 Player Name *
@@ -522,63 +613,6 @@ export default function AdminDashboard() {
                   setForm((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="e.g. Notch"
-                className="bg-secondary border-border"
-                data-ocid="player-form.input"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  Tier *
-                </Label>
-                <Select
-                  value={form.tier}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, tier: v as Tier }))
-                  }
-                >
-                  <SelectTrigger
-                    className="bg-secondary border-border"
-                    data-ocid="player-form.select"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border">
-                    {TIERS.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t.toUpperCase()} Tier
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                  Points
-                </Label>
-                <Input
-                  type="number"
-                  value={form.points}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, points: e.target.value }))
-                  }
-                  placeholder="0"
-                  min="0"
-                  className="bg-secondary border-border"
-                  data-ocid="player-form.input"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-1.5 block">
-                Gamemode *
-              </Label>
-              <Input
-                value={form.gameMode}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, gameMode: e.target.value }))
-                }
-                placeholder="e.g. PvP, Survival, UHC"
                 className="bg-secondary border-border"
                 data-ocid="player-form.input"
               />
@@ -596,6 +630,70 @@ export default function AdminDashboard() {
                 className="bg-secondary border-border"
                 data-ocid="player-form.input"
               />
+            </div>
+
+            {/* Entries */}
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider mb-2 block">
+                Game Mode Entries *
+              </Label>
+              <div className="space-y-2">
+                {form.entries.map((entry, idx) => (
+                  <div
+                    key={entry._id}
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/20 border border-border/50"
+                    data-ocid={`player-form.item.${idx + 1}`}
+                  >
+                    <Input
+                      value={entry.gameMode}
+                      onChange={(e) =>
+                        updateEntry(idx, "gameMode", e.target.value)
+                      }
+                      placeholder="e.g. PvP, UHC"
+                      className="bg-secondary border-border flex-1 h-8 text-sm"
+                    />
+                    <Select
+                      value={entry.tier}
+                      onValueChange={(v) => updateEntry(idx, "tier", v)}
+                    >
+                      <SelectTrigger
+                        className="bg-secondary border-border w-24 h-8 text-sm"
+                        data-ocid="player-form.select"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover border-border">
+                        {TIERS.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {t.toUpperCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {form.entries.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeEntry(idx)}
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                        data-ocid={`player-form.delete_button.${idx + 1}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={addEntry}
+                className="mt-2 w-full border-dashed border-border text-muted-foreground hover:text-foreground text-xs"
+                data-ocid="player-form.secondary_button"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Add Game Mode
+              </Button>
             </div>
           </div>
           <DialogFooter>

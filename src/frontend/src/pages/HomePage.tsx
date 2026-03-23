@@ -10,16 +10,22 @@ import SiteNav from "../components/SiteNav";
 import TierBadge from "../components/TierBadge";
 import {
   TIER_ORDER,
+  getBestEntry,
   useGetAllPlayers,
   useGetPodium,
 } from "../hooks/useQueries";
 
 const tierNames: Record<Tier, string> = {
-  [Tier.s]: "S Tier — God Tier",
-  [Tier.a]: "A Tier — Elite",
-  [Tier.b]: "B Tier — Advanced",
-  [Tier.c]: "C Tier — Intermediate",
-  [Tier.d]: "D Tier — Beginner",
+  [Tier.ht1]: "HT1 — Highest Tier",
+  [Tier.lt1]: "LT1 — Lower High Tier",
+  [Tier.ht2]: "HT2 — High Tier 2",
+  [Tier.lt2]: "LT2 — Lower Tier 2",
+  [Tier.ht3]: "HT3 — Mid Tier High",
+  [Tier.lt3]: "LT3 — Mid Tier Low",
+  [Tier.ht4]: "HT4 — Lower Mid Tier",
+  [Tier.lt4]: "LT4 — Low Tier",
+  [Tier.ht5]: "HT5 — Near Bottom",
+  [Tier.lt5]: "LT5 — Lowest Tier",
 };
 
 function PodiumCard({
@@ -48,6 +54,8 @@ function PodiumCard({
     3: "#B07A4A",
   };
 
+  const bestEntry = player ? getBestEntry(player) : null;
+
   return (
     <div className="flex flex-col items-center gap-3">
       {/* Avatar floats above podium */}
@@ -67,7 +75,7 @@ function PodiumCard({
             size="xl"
             className="border-4"
           />
-          <TierBadge tier={player.tier} size="lg" />
+          {bestEntry && <TierBadge tier={bestEntry.tier} size="lg" />}
         </motion.div>
       ) : (
         <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
@@ -85,14 +93,9 @@ function PodiumCard({
           {labels[place]}
         </span>
         {player ? (
-          <>
-            <span className="text-foreground font-bold text-sm text-center px-2 line-clamp-1">
-              {player.name}
-            </span>
-            <span className="text-muted-foreground text-xs">
-              {player.points.toString()} pts
-            </span>
-          </>
+          <span className="text-foreground font-bold text-sm text-center px-2 line-clamp-1">
+            {player.name}
+          </span>
         ) : (
           <span className="text-muted-foreground text-xs">TBD</span>
         )}
@@ -111,12 +114,13 @@ export default function HomePage() {
     tierListRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Group players by tier
+  // Group players by their best tier
   const playersByTier = TIER_ORDER.reduce(
     (acc, tier) => {
-      acc[tier] = allPlayers
-        .filter((p) => p.tier === tier)
-        .sort((a, b) => Number(b.points) - Number(a.points));
+      acc[tier] = allPlayers.filter((p) => {
+        const best = getBestEntry(p);
+        return best?.tier === tier;
+      });
       return acc;
     },
     {} as Record<Tier, Player[]>,
@@ -308,14 +312,8 @@ export default function HomePage() {
                                   <th className="text-left px-4 py-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                                     Player
                                   </th>
-                                  <th className="text-left px-4 py-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider hidden sm:table-cell">
-                                    Gamemode
-                                  </th>
-                                  <th className="text-right px-4 py-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
-                                    Points
-                                  </th>
-                                  <th className="text-center px-4 py-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider w-16">
-                                    Tier
+                                  <th className="text-left px-4 py-2 text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                                    Game Modes
                                   </th>
                                 </tr>
                               </thead>
@@ -341,14 +339,23 @@ export default function HomePage() {
                                         </span>
                                       </div>
                                     </td>
-                                    <td className="px-4 py-3 text-muted-foreground text-sm hidden sm:table-cell">
-                                      {player.gameMode}
-                                    </td>
-                                    <td className="px-4 py-3 text-right font-mono text-sm text-foreground">
-                                      {player.points.toString()}
-                                    </td>
-                                    <td className="px-4 py-3 text-center">
-                                      <TierBadge tier={player.tier} size="sm" />
+                                    <td className="px-4 py-3">
+                                      <div className="flex flex-wrap gap-1.5">
+                                        {player.entries.map((e, ei) => (
+                                          <span
+                                            key={`${e.gameMode}-${e.tier}-${ei}`}
+                                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-muted/40 border border-border/40"
+                                          >
+                                            <TierBadge
+                                              tier={e.tier}
+                                              size="sm"
+                                            />
+                                            <span className="text-xs text-muted-foreground">
+                                              {e.gameMode}
+                                            </span>
+                                          </span>
+                                        ))}
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
@@ -398,24 +405,44 @@ export default function HomePage() {
                   <ul className="space-y-3">
                     {[
                       {
-                        tier: Tier.s,
+                        tier: Tier.ht1,
                         desc: "Reserved for the absolute best. Flawless mechanics and game sense.",
                       },
                       {
-                        tier: Tier.a,
-                        desc: "Elite players with exceptional skill and consistency.",
+                        tier: Tier.lt1,
+                        desc: "Near-elite players with exceptional consistency and skill.",
                       },
                       {
-                        tier: Tier.b,
-                        desc: "Above average. Solid mechanics and game knowledge.",
+                        tier: Tier.ht2,
+                        desc: "High-level players with strong mechanics and game knowledge.",
                       },
                       {
-                        tier: Tier.c,
-                        desc: "Intermediate players still improving their skills.",
+                        tier: Tier.lt2,
+                        desc: "Solid players who perform well but have room to improve.",
                       },
                       {
-                        tier: Tier.d,
-                        desc: "New or beginner-level players just starting out.",
+                        tier: Tier.ht3,
+                        desc: "Mid-tier players with decent skill and some inconsistencies.",
+                      },
+                      {
+                        tier: Tier.lt3,
+                        desc: "Average players still developing their core mechanics.",
+                      },
+                      {
+                        tier: Tier.ht4,
+                        desc: "Below average. Struggles in high-pressure situations.",
+                      },
+                      {
+                        tier: Tier.lt4,
+                        desc: "Beginner to low-skill range. Fundamentals need work.",
+                      },
+                      {
+                        tier: Tier.ht5,
+                        desc: "Near-bottom tier. Very new or inexperienced players.",
+                      },
+                      {
+                        tier: Tier.lt5,
+                        desc: "Lowest tier. Just starting out on their journey.",
                       },
                     ].map(({ tier, desc }) => (
                       <li key={tier} className="flex items-start gap-3">

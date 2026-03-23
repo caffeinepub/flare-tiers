@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { type Player, Tier } from "../backend";
+import { type GameModeEntry, type Player, Tier } from "../backend";
 import { useActor } from "./useActor";
 
 export function useGetAllPlayers() {
@@ -9,18 +9,6 @@ export function useGetAllPlayers() {
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllPlayers();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useGetTop3Players() {
-  const { actor, isFetching } = useActor();
-  return useQuery<Player[]>({
-    queryKey: ["top3"],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getTop3Players();
     },
     enabled: !!actor && !isFetching,
   });
@@ -54,9 +42,17 @@ export function useAddPlayer() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (player: Player) => {
+    mutationFn: async ({
+      name,
+      entries,
+      avatarUrl,
+    }: {
+      name: string;
+      entries: GameModeEntry[];
+      avatarUrl: string;
+    }) => {
       if (!actor) throw new Error("Not connected");
-      return actor.addPlayer(player);
+      return actor.addPlayer(name, entries, avatarUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
   });
@@ -66,9 +62,19 @@ export function useUpdatePlayer() {
   const { actor } = useActor();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, player }: { id: bigint; player: Player }) => {
+    mutationFn: async ({
+      id,
+      name,
+      entries,
+      avatarUrl,
+    }: {
+      id: bigint;
+      name: string;
+      entries: GameModeEntry[];
+      avatarUrl: string;
+    }) => {
       if (!actor) throw new Error("Not connected");
-      return actor.updatePlayer(id, player);
+      return actor.updatePlayer(id, name, entries, avatarUrl);
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["players"] }),
   });
@@ -100,7 +106,6 @@ export function useSetPodium() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["podium"] });
-      qc.invalidateQueries({ queryKey: ["top3"] });
     },
   });
 }
@@ -111,17 +116,27 @@ export function useSeedData() {
   return useMutation({
     mutationFn: async () => {
       if (!actor) throw new Error("Not connected");
-      return actor.seedSampleData();
+      return actor.seedSamplePlayers();
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["players"] });
       qc.invalidateQueries({ queryKey: ["podium"] });
-      qc.invalidateQueries({ queryKey: ["top3"] });
     },
   });
 }
 
-export const TIER_ORDER: Tier[] = [Tier.s, Tier.a, Tier.b, Tier.c, Tier.d];
+export const TIER_ORDER: Tier[] = [
+  Tier.ht1,
+  Tier.lt1,
+  Tier.ht2,
+  Tier.lt2,
+  Tier.ht3,
+  Tier.lt3,
+  Tier.ht4,
+  Tier.lt4,
+  Tier.ht5,
+  Tier.lt5,
+];
 
 export function tierLabel(tier: Tier): string {
   return tier.toUpperCase();
@@ -129,4 +144,24 @@ export function tierLabel(tier: Tier): string {
 
 export function getTierClass(tier: Tier): string {
   return `tier-${tier}`;
+}
+
+/** Returns the best (highest-ranked) tier entry for a player, or null */
+export function getBestEntry(player: Player) {
+  if (!player.entries || player.entries.length === 0) return null;
+  const RANK: Record<Tier, number> = {
+    [Tier.ht1]: 1,
+    [Tier.lt1]: 2,
+    [Tier.ht2]: 3,
+    [Tier.lt2]: 4,
+    [Tier.ht3]: 5,
+    [Tier.lt3]: 6,
+    [Tier.ht4]: 7,
+    [Tier.lt4]: 8,
+    [Tier.ht5]: 9,
+    [Tier.lt5]: 10,
+  };
+  return player.entries.reduce((best, e) =>
+    RANK[e.tier] < RANK[best.tier] ? e : best,
+  );
 }

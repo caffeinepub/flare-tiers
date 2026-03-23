@@ -1,33 +1,30 @@
 # Flare Tiers
 
 ## Current State
-New project, no existing code.
+- Players have a single `gameMode: Text` and `tier: Tier` and `points: Nat`
+- Admin can add/edit players with one game mode and one tier
+- `getSecretFromHash` in urlParams.ts incorrectly parses the admin token — causing "failed to save player data" errors
 
 ## Requested Changes (Diff)
 
 ### Add
-- Public tier list page showing all players grouped by tier (S, A, B, C, D)
-- Top 3 podium section showing the top three ranked players
-- Admin login page (username/password)
-- Admin dashboard to add, edit, and remove players with their tier, points, and gamemode
-- Admin ability to designate the top 3 players
-- Minecraft-themed dark gaming aesthetic, pixel font headings, neon tier accents
+- `GameModeEntry` type: `{ gameMode: Text; tier: Tier }`
+- Each player has multiple game mode entries (array of GameModeEntry)
+- Frontend form: dynamic list to add/remove game mode+tier pairs per player
+- Podium and leaderboard ranking based on best (highest) tier across all entries
 
 ### Modify
-N/A
+- Fix `getSecretFromHash` in `urlParams.ts` — find `?` in hash and parse from there
+- Backend `Player` type: remove `gameMode: Text`, `tier: Tier`, `points: Nat`; add `entries: [GameModeEntry]`
+- All backend functions updated for new Player shape
+- Frontend: show per-player game mode+tier chips/badges in the roster table and on the homepage
+- Frontend form: replace single gameMode/tier/points fields with dynamic entry list
 
 ### Remove
-N/A
+- `gameMode: Text`, `tier: Tier`, `points: Nat` from Player type
+- Single-mode tier display
 
 ## Implementation Plan
-1. Select `authorization` component for admin login/role-based access
-2. Generate Motoko backend with:
-   - Player data type: id, name, tier (S/A/B/C/D), points, gamemode, avatarUrl
-   - CRUD operations for players (admin only)
-   - Top 3 management: set/get top 3 player ids (admin only)
-   - Public queries: get all players, get top 3
-3. Build frontend:
-   - Public landing page: hero, top 3 podium, full tier list table grouped by tier
-   - Admin login page
-   - Admin dashboard: player list with add/edit/delete, top 3 picker
-   - Minecraft pixel font (Press Start 2P), dark theme, tier badge colors
+1. Fix `getSecretFromHash` in `urlParams.ts`
+2. Regenerate backend with new Player/GameModeEntry types
+3. Update frontend form, roster table, and homepage tier display

@@ -45,11 +45,18 @@
     --gold: 0.72 0.12 70;
     --silver: 0.62 0.02 240;
     --bronze: 0.58 0.1 50;
-    --tier-s: 0.65 0.2 25;
-    --tier-a: 0.72 0.15 65;
-    --tier-b: 0.85 0.15 90;
-    --tier-c: 0.65 0.15 145;
-    --tier-d: 0.55 0.15 255;
+    /* HT tiers: warm red/orange gradient */
+    --tier-ht1: 0.62 0.22 15;
+    --tier-ht2: 0.62 0.2 25;
+    --tier-ht3: 0.65 0.18 40;
+    --tier-ht4: 0.68 0.16 55;
+    --tier-ht5: 0.72 0.14 65;
+    /* LT tiers: cool blue/purple gradient */
+    --tier-lt1: 0.62 0.18 280;
+    --tier-lt2: 0.58 0.16 265;
+    --tier-lt3: 0.55 0.14 250;
+    --tier-lt4: 0.52 0.12 240;
+    --tier-lt5: 0.48 0.1 230;
   }
 
   * {
@@ -71,26 +78,50 @@
     font-family: "Press Start 2P", monospace;
   }
 
-  .tier-s {
-    background: oklch(var(--tier-s));
+  /* HT tiers - warm */
+  .tier-ht1 {
+    background: oklch(var(--tier-ht1));
     color: #fff;
-    box-shadow: 0 0 8px oklch(var(--tier-s) / 0.7);
+    box-shadow: 0 0 10px oklch(var(--tier-ht1) / 0.8);
   }
-  .tier-a {
-    background: oklch(var(--tier-a));
+  .tier-ht2 {
+    background: oklch(var(--tier-ht2));
+    color: #fff;
+    box-shadow: 0 0 8px oklch(var(--tier-ht2) / 0.6);
+  }
+  .tier-ht3 {
+    background: oklch(var(--tier-ht3));
     color: #000;
-    box-shadow: 0 0 6px oklch(var(--tier-a) / 0.5);
+    box-shadow: 0 0 6px oklch(var(--tier-ht3) / 0.5);
   }
-  .tier-b {
-    background: oklch(var(--tier-b));
+  .tier-ht4 {
+    background: oklch(var(--tier-ht4));
     color: #000;
   }
-  .tier-c {
-    background: oklch(var(--tier-c));
+  .tier-ht5 {
+    background: oklch(var(--tier-ht5));
+    color: #000;
+  }
+  /* LT tiers - cool */
+  .tier-lt1 {
+    background: oklch(var(--tier-lt1));
+    color: #fff;
+    box-shadow: 0 0 8px oklch(var(--tier-lt1) / 0.6);
+  }
+  .tier-lt2 {
+    background: oklch(var(--tier-lt2));
     color: #fff;
   }
-  .tier-d {
-    background: oklch(var(--tier-d));
+  .tier-lt3 {
+    background: oklch(var(--tier-lt3));
+    color: #fff;
+  }
+  .tier-lt4 {
+    background: oklch(var(--tier-lt4));
+    color: #fff;
+  }
+  .tier-lt5 {
+    background: oklch(var(--tier-lt5));
     color: #fff;
   }
 
