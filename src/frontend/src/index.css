@@ -1,0 +1,145 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.375rem;
+    /* Dark Minecraft theme - always dark */
+    --background: 0.1 0.018 264;
+    --foreground: 0.95 0.018 264;
+    --card: 0.14 0.018 264;
+    --card-foreground: 0.95 0.018 264;
+    --popover: 0.16 0.018 264;
+    --popover-foreground: 0.95 0.018 264;
+    --primary: 0.55 0.15 255;
+    --primary-foreground: 0.98 0.005 264;
+    --secondary: 0.18 0.025 264;
+    --secondary-foreground: 0.95 0.018 264;
+    --muted: 0.18 0.025 264;
+    --muted-foreground: 0.68 0.03 220;
+    --accent: 0.22 0.03 264;
+    --accent-foreground: 0.95 0.018 264;
+    --destructive: 0.62 0.22 25;
+    --destructive-foreground: 0.98 0.005 264;
+    --border: 0.25 0.025 264;
+    --input: 0.22 0.025 264;
+    --ring: 0.55 0.15 255;
+    --chart-1: 0.65 0.2 25;
+    --chart-2: 0.72 0.15 65;
+    --chart-3: 0.85 0.15 90;
+    --chart-4: 0.65 0.15 145;
+    --chart-5: 0.55 0.15 255;
+    --sidebar: 0.12 0.018 264;
+    --sidebar-foreground: 0.95 0.018 264;
+    --sidebar-primary: 0.55 0.15 255;
+    --sidebar-primary-foreground: 0.98 0.005 264;
+    --sidebar-accent: 0.18 0.025 264;
+    --sidebar-accent-foreground: 0.95 0.018 264;
+    --sidebar-border: 0.25 0.025 264;
+    --sidebar-ring: 0.55 0.15 255;
+    /* Custom semantic tokens */
+    --cyan: 0.72 0.1 215;
+    --gold: 0.72 0.12 70;
+    --silver: 0.62 0.02 240;
+    --bronze: 0.58 0.1 50;
+    --tier-s: 0.65 0.2 25;
+    --tier-a: 0.72 0.15 65;
+    --tier-b: 0.85 0.15 90;
+    --tier-c: 0.65 0.15 145;
+    --tier-d: 0.55 0.15 255;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "General Sans", "Plus Jakarta Sans", system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-pixel {
+    font-family: "Press Start 2P", monospace;
+  }
+
+  .tier-s {
+    background: oklch(var(--tier-s));
+    color: #fff;
+    box-shadow: 0 0 8px oklch(var(--tier-s) / 0.7);
+  }
+  .tier-a {
+    background: oklch(var(--tier-a));
+    color: #000;
+    box-shadow: 0 0 6px oklch(var(--tier-a) / 0.5);
+  }
+  .tier-b {
+    background: oklch(var(--tier-b));
+    color: #000;
+  }
+  .tier-c {
+    background: oklch(var(--tier-c));
+    color: #fff;
+  }
+  .tier-d {
+    background: oklch(var(--tier-d));
+    color: #fff;
+  }
+
+  .nav-blur {
+    background: rgba(10, 15, 25, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .hero-overlay {
+    background: radial-gradient(
+      ellipse at center,
+      rgba(10, 15, 25, 0.3) 0%,
+      rgba(10, 15, 25, 0.7) 50%,
+      rgba(10, 15, 25, 0.92) 100%
+    );
+  }
+
+  .podium-gold {
+    background: linear-gradient(
+      180deg,
+      oklch(0.72 0.12 70) 0%,
+      oklch(0.58 0.1 70) 100%
+    );
+    box-shadow: 0 0 20px oklch(0.72 0.12 70 / 0.4);
+  }
+  .podium-silver {
+    background: linear-gradient(
+      180deg,
+      oklch(0.62 0.02 240) 0%,
+      oklch(0.48 0.02 240) 100%
+    );
+    box-shadow: 0 0 16px oklch(0.62 0.02 240 / 0.3);
+  }
+  .podium-bronze {
+    background: linear-gradient(
+      180deg,
+      oklch(0.58 0.1 50) 0%,
+      oklch(0.44 0.08 50) 100%
+    );
+    box-shadow: 0 0 16px oklch(0.58 0.1 50 / 0.3);
+  }
+
+  .glow-blue {
+    text-shadow: 0 0 20px oklch(0.68 0.17 255 / 0.8);
+  }
+
+  .glow-cyan {
+    color: oklch(var(--cyan));
+    text-shadow: 0 0 12px oklch(var(--cyan) / 0.6);
+  }
+}
