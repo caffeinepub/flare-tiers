@@ -6,12 +6,12 @@ import Runtime "mo:core/Runtime";
 import List "mo:core/List";
 import Iter "mo:core/Iter";
 import Order "mo:core/Order";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 // Apply migration function in with-clause
-(with migration = Migration.run)
+
 actor {
   // Tier enums (ht1 is highest, lt5 is lowest)
   public type Tier = {
